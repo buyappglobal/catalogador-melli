@@ -23,7 +23,8 @@ interface CatalogData {
 const CopyButton = ({ textToCopy, className = "" }: { textToCopy: string, className?: string }) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
+  const handleCopy = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -37,6 +38,58 @@ const CopyButton = ({ textToCopy, className = "" }: { textToCopy: string, classN
     >
       {copied ? <CheckCircle className="w-5 h-5 sm:w-4 sm:h-4" /> : <Copy className="w-5 h-5 sm:w-4 sm:h-4" />}
     </button>
+  );
+};
+
+const FichaTecnicaRow = ({ item }: { item: FichaTecnicaItem }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(item.valor);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div 
+      onClick={handleCopy}
+      className="flex justify-between items-center border-b border-slate-100 py-3 sm:py-2 last:border-0 group cursor-pointer hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors active:bg-slate-100"
+      title="Clic para copiar valor"
+    >
+      <span className="text-sm sm:text-xs font-medium text-slate-500 pr-2">{item.caracteristica}</span>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className={`text-base sm:text-sm font-medium text-right transition-colors ${copied ? 'text-emerald-600' : 'text-slate-800'}`}>
+          {copied ? '¡Copiado!' : item.valor}
+        </span>
+        <CopyButton textToCopy={item.valor} className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+    </div>
+  );
+};
+
+const CompatibilidadRow = ({ comp }: { comp: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(comp);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <li 
+      onClick={handleCopy}
+      className="text-base sm:text-sm flex items-center justify-between group cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-2 sm:py-1.5 -mx-2 transition-colors active:bg-slate-100"
+      title="Clic para copiar referencia"
+    >
+      <div className="flex items-start gap-2 pr-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 sm:mt-1.5 shrink-0" />
+        <span className={`leading-snug transition-colors ${copied ? 'text-emerald-600 font-medium' : 'text-slate-600'}`}>
+          {copied ? '¡Copiado!' : comp}
+        </span>
+      </div>
+      <CopyButton textToCopy={comp} className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+    </li>
   );
 };
 
@@ -432,15 +485,9 @@ Limpieza de Datos:
                         </h3>
                         <CopyButton textToCopy={result.Compatibilidades.join('\n')} />
                       </div>
-                      <ul className="space-y-3 sm:space-y-2">
+                      <ul className="space-y-1">
                         {result.Compatibilidades.map((comp, idx) => (
-                          <li key={idx} className="text-base sm:text-sm text-slate-600 flex items-center justify-between group">
-                            <div className="flex items-start gap-2 pr-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 sm:mt-1.5 shrink-0" />
-                              <span className="leading-snug">{comp}</span>
-                            </div>
-                            <CopyButton textToCopy={comp} className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                          </li>
+                          <CompatibilidadRow key={idx} comp={comp} />
                         ))}
                       </ul>
                     </div>
@@ -454,15 +501,9 @@ Limpieza de Datos:
                         </h3>
                         <CopyButton textToCopy={result.Ficha_Tecnica.map(f => `${f.caracteristica}: ${f.valor}`).join('\n')} />
                       </div>
-                      <div className="space-y-4 sm:space-y-3">
+                      <div className="space-y-1">
                         {result.Ficha_Tecnica.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center border-b border-slate-100 pb-3 sm:pb-2 last:border-0 last:pb-0 group">
-                            <span className="text-sm sm:text-xs font-medium text-slate-500 pr-2">{item.caracteristica}</span>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-base sm:text-sm text-slate-800 font-medium text-right">{item.valor}</span>
-                              <CopyButton textToCopy={item.valor} className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                          </div>
+                          <FichaTecnicaRow key={idx} item={item} />
                         ))}
                       </div>
                     </div>
