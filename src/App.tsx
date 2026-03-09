@@ -32,10 +32,10 @@ const CopyButton = ({ textToCopy, className = "" }: { textToCopy: string, classN
   return (
     <button
       onClick={handleCopy}
-      className={`transition-colors p-1.5 rounded-md hover:bg-slate-100 ${copied ? 'text-emerald-600' : 'text-slate-400 hover:text-emerald-600'} ${className}`}
+      className={`transition-colors p-2.5 sm:p-1.5 rounded-lg hover:bg-slate-100 active:bg-slate-200 ${copied ? 'text-emerald-600' : 'text-slate-400 hover:text-emerald-600'} ${className}`}
       title="Copiar al portapapeles"
     >
-      {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+      {copied ? <CheckCircle className="w-5 h-5 sm:w-4 sm:h-4" /> : <Copy className="w-5 h-5 sm:w-4 sm:h-4" />}
     </button>
   );
 };
@@ -266,19 +266,19 @@ Limpieza de Datos:
                   <p className="text-sm font-medium text-slate-700 mb-1">Sube o arrastra la foto de la etiqueta</p>
                   <p className="text-xs text-slate-500 mb-6">Soporta JPG, PNG, WEBP</p>
                   
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
                     <button 
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-white border-2 border-slate-300 rounded-xl text-base sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors w-full"
                     >
-                      <ImageIcon className="w-4 h-4" />
+                      <ImageIcon className="w-5 h-5 sm:w-4 sm:h-4" />
                       Galería / Archivo
                     </button>
                     <button 
                       onClick={() => cameraInputRef.current?.click()}
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-emerald-700 transition-colors shadow-sm"
+                      className="flex-1 flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-emerald-600 border-2 border-emerald-600 rounded-xl text-base sm:text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm w-full"
                     >
-                      <Camera className="w-4 h-4" />
+                      <Camera className="w-5 h-5 sm:w-4 sm:h-4" />
                       Hacer Foto
                     </button>
                   </div>
@@ -318,16 +318,16 @@ Limpieza de Datos:
                   <button
                     onClick={processImage}
                     disabled={loading}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-lg sm:text-base py-4 sm:py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md"
                   >
                     {loading ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-6 h-6 sm:w-5 sm:h-5 animate-spin" />
                         Procesando con IA...
                       </>
                     ) : (
                       <>
-                        <Settings className="w-5 h-5" />
+                        <Settings className="w-6 h-6 sm:w-5 sm:h-5" />
                         Extraer Información
                       </>
                     )}
@@ -384,16 +384,16 @@ Limpieza de Datos:
                   className="space-y-6"
                 >
                   {/* Título y OE */}
-                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div className="flex justify-between items-start mb-2">
-                      <h2 className="text-2xl font-bold text-slate-900 leading-tight pr-4">
+                  <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div className="flex justify-between items-start mb-2 gap-4">
+                      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">
                         {result.Titulo_Comercial}
                       </h2>
-                      <CopyButton textToCopy={result.Titulo_Comercial} />
+                      <CopyButton textToCopy={result.Titulo_Comercial} className="shrink-0" />
                     </div>
-                    <div className="flex items-center gap-2 mt-4">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-sm font-medium border border-slate-200">
-                        <Tag className="w-3.5 h-3.5" />
+                    <div className="flex items-center justify-between sm:justify-start gap-2 mt-4">
+                      <span className="inline-flex items-center gap-1.5 px-4 py-2 sm:px-3 sm:py-1 rounded-full bg-slate-100 text-slate-700 text-base sm:text-sm font-medium border border-slate-200">
+                        <Tag className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                         OE: <span className="font-mono">{result.Referencia_OE}</span>
                       </span>
                       <CopyButton textToCopy={result.Referencia_OE} />
@@ -401,8 +401,8 @@ Limpieza de Datos:
                   </div>
 
                   {/* Bloque Superior: Texto de Venta */}
-                  <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <div className="bg-emerald-50 p-5 sm:p-6 rounded-2xl border border-emerald-100 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                       <ShieldCheck className="w-24 h-24 text-emerald-600" />
                     </div>
                     <div className="relative z-10">
@@ -416,7 +416,7 @@ Limpieza de Datos:
                           className="text-emerald-600/60 hover:text-emerald-700 hover:bg-emerald-100/50"
                         />
                       </div>
-                      <p className="text-emerald-900/80 leading-relaxed">
+                      <p className="text-base sm:text-sm text-emerald-900/80 leading-relaxed">
                         {result.Texto_Venta_Persuasivo}
                       </p>
                     </div>
@@ -424,7 +424,7 @@ Limpieza de Datos:
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Bloque Inferior Izq: Compatibilidades */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -432,21 +432,21 @@ Limpieza de Datos:
                         </h3>
                         <CopyButton textToCopy={result.Compatibilidades.join('\n')} />
                       </div>
-                      <ul className="space-y-2">
+                      <ul className="space-y-3 sm:space-y-2">
                         {result.Compatibilidades.map((comp, idx) => (
-                          <li key={idx} className="text-sm text-slate-600 flex items-center justify-between group">
-                            <div className="flex items-start gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
-                              <span>{comp}</span>
+                          <li key={idx} className="text-base sm:text-sm text-slate-600 flex items-center justify-between group">
+                            <div className="flex items-start gap-2 pr-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 sm:mt-1.5 shrink-0" />
+                              <span className="leading-snug">{comp}</span>
                             </div>
-                            <CopyButton textToCopy={comp} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <CopyButton textToCopy={comp} className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                           </li>
                         ))}
                       </ul>
                     </div>
 
                     {/* Bloque Inferior Der: Ficha Técnica */}
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                           <Settings className="w-4 h-4 text-slate-400" />
@@ -454,13 +454,13 @@ Limpieza de Datos:
                         </h3>
                         <CopyButton textToCopy={result.Ficha_Tecnica.map(f => `${f.caracteristica}: ${f.valor}`).join('\n')} />
                       </div>
-                      <div className="space-y-3">
+                      <div className="space-y-4 sm:space-y-3">
                         {result.Ficha_Tecnica.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center border-b border-slate-100 pb-2 last:border-0 last:pb-0 group">
-                            <span className="text-xs font-medium text-slate-500">{item.caracteristica}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm text-slate-800 font-medium text-right">{item.valor}</span>
-                              <CopyButton textToCopy={item.valor} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div key={idx} className="flex justify-between items-center border-b border-slate-100 pb-3 sm:pb-2 last:border-0 last:pb-0 group">
+                            <span className="text-sm sm:text-xs font-medium text-slate-500 pr-2">{item.caracteristica}</span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-base sm:text-sm text-slate-800 font-medium text-right">{item.valor}</span>
+                              <CopyButton textToCopy={item.valor} className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                           </div>
                         ))}
