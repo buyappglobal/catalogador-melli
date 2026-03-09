@@ -1,11 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Image as ImageIcon, Loader2, CheckCircle, Package, FileText, Settings, ShieldCheck, Tag, Copy, RefreshCw, Lightbulb, ChevronDown, Sparkles, Camera } from 'lucide-react';
-import { GoogleGenAI, Type } from '@google/genai';
 import { motion, AnimatePresence } from 'motion/react';
-
-// Soporta tanto el entorno de AI Studio como el despliegue en GitHub Pages con VITE_GEMINI_API_KEY
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey });
 
 interface FichaTecnicaItem {
   caracteristica: string;
@@ -148,73 +143,26 @@ export default function App() {
       const base64Data = image.split(',')[1];
       const mimeType = image.split(';')[0].split(':')[1];
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType,
-            },
-          },
-          {
-            text: `Eres el experto en catalogación de Desguaces Melli. Tu función es recibir fotos de etiquetas de recambios y devolver SIEMPRE un objeto JSON con: Referencia_OE, Titulo_Comercial, Compatibilidades, Ficha_Tecnica y Texto_Venta_Persuasivo. Responde siempre en español y asegúrate de que el texto de venta mencione la garantía y calidad de origen.
-
-Limpieza de Datos:
-- Regla de Referencia: Extrae la referencia OE principal eliminando cualquier guion (-), punto (.) o espacio innecesario. El resultado debe ser una cadena alfanumérica limpia (Ej: de AV11-19D629-BA a AV1119D629BA).
-- Asegúrate de incluir la Referencia OE limpia dentro de la Ficha_Tecnica como un dato clave, además de otros datos relevantes que encuentres (ej. Refrigerante, Aceite, etc.).
-- En Compatibilidades, incluye no solo modelos de vehículos, sino también referencias de otros constructores y referencias equivalentes que encuentres o deduzcas. IMPORTANTE: Las referencias equivalentes o de otros constructores también deben ir limpias, sin guiones, puntos ni espacios (los nombres de vehículos y años sí pueden mantenerlos).
-- CRÍTICO PARA COMPATIBILIDADES: NO inventes ni asumas referencias equivalentes bajo ningún concepto. SOLO incluye referencias que estén EXPLÍCITAMENTE escritas en la etiqueta de la foto, o referencias cruzadas que estés 100% seguro que pertenecen a la misma pieza exacta. Si tienes la más mínima duda sobre una referencia, NO la incluyas. Es preferible tener menos compatibilidades que incluir una referencia incorrecta.`,
-          },
-        ],
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              Referencia_OE: {
-                type: Type.STRING,
-                description: "Referencia original del fabricante (OE) extraída de la etiqueta, sin guiones ni espacios",
-              },
-              Titulo_Comercial: {
-                type: Type.STRING,
-                description: "Título comercial descriptivo y atractivo del recambio",
-              },
-              Compatibilidades: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-                description: "Lista de vehículos, marcas, modelos compatibles, referencias equivalentes o referencias de otros constructores deducidos o leídos. Las referencias deben ir limpias sin guiones ni espacios.",
-              },
-              Ficha_Tecnica: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    caracteristica: { type: Type.STRING },
-                    valor: { type: Type.STRING },
-                  },
-                  required: ["caracteristica", "valor"],
-                },
-                description: "Ficha técnica con características clave del recambio (incluyendo la referencia limpia, refrigerante, aceite, etc.)",
-              },
-              Texto_Venta_Persuasivo: {
-                type: Type.STRING,
-                description: "Texto persuasivo para la venta, mencionando garantía y calidad de origen de Desguaces Melli",
-              },
-            },
-            required: [
-              "Referencia_OE",
-              "Titulo_Comercial",
-              "Compatibilidades",
-              "Ficha_Tecnica",
-              "Texto_Venta_Persuasivo",
-            ],
-          },
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          image: base64Data,
+          mimeType: mimeType,
+        }),
       });
 
-      if (response.text) {
-        const parsedData = JSON.parse(response.text) as CatalogData;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al procesar la imagen en el servidor');
+      }
+
+      const data = await response.json();
+      
+      if (data.text) {
+        const parsedData = JSON.parse(data.text) as CatalogData;
         setResult(parsedData);
       } else {
         throw new Error("No se recibió respuesta del modelo.");
