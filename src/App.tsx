@@ -232,15 +232,13 @@ export default function App() {
     e.preventDefault();
   };
 
-  const processImage = async () => {
-    if (!image) return;
-
+  const processImageWithData = async (imageData: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      const base64Data = image.split(',')[1];
-      const mimeType = image.split(';')[0].split(':')[1];
+      const base64Data = imageData.split(',')[1];
+      const mimeType = imageData.split(';')[0].split(':')[1];
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
@@ -318,6 +316,12 @@ Limpieza de Datos:
       setError("Hubo un error al procesar la imagen. Por favor, inténtalo de nuevo.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const processImage = () => {
+    if (image) {
+      processImageWithData(image);
     }
   };
 
@@ -567,11 +571,8 @@ Limpieza de Datos:
             setImage(base64);
             setResult(null);
             setError(null);
-            // Auto-trigger processing after a brief delay to allow state to update
-            setTimeout(() => {
-              const processBtn = document.getElementById('process-btn');
-              if (processBtn) processBtn.click();
-            }, 100);
+            // Auto-trigger processing immediately with the new image data
+            processImageWithData(base64);
           }} 
         />
       )}
