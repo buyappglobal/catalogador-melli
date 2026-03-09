@@ -410,6 +410,7 @@ Limpieza de Datos:
                   </div>
                   
                   <button
+                    id="process-btn"
                     onClick={processImage}
                     disabled={loading}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-lg sm:text-base py-4 sm:py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md"
@@ -566,6 +567,11 @@ Limpieza de Datos:
             setImage(base64);
             setResult(null);
             setError(null);
+            // Auto-trigger processing after a brief delay to allow state to update
+            setTimeout(() => {
+              const processBtn = document.getElementById('process-btn');
+              if (processBtn) processBtn.click();
+            }, 100);
           }} 
         />
       )}
