@@ -32,8 +32,8 @@ service cloud.firestore {
     function isValidPhotoSessionUpdate(data) {
       return hasOnlyAllowedFields(['status', 'createdAt', 'photoData']) &&
              data.createdAt == resource.data.createdAt && // Immutable
-             (data.status == 'connected' || data.status == 'photo_taken') &&
-             (!('photoData' in data) || (data.photoData is string && data.photoData.size() < 1000000));
+             (data.status == 'connected' || data.status == 'photo_taken' || data.status == 'ready') &&
+             (!('photoData' in data) || data.photoData == null || (data.photoData is string && data.photoData.size() < 1000000));
     }
 
     // ===============================================================

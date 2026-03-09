@@ -29,7 +29,10 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
             setStatus(data.status);
             if (data.status === 'photo_taken' && data.photoData) {
               onPhotoReceived(data.photoData);
-              onClose();
+              // Instead of closing the modal, we keep it open and reset the status
+              // so the mobile device can send another photo.
+              // We don't reset the status here, the mobile device will reset it to 'ready'
+              // when the user clicks "Hacer otra foto".
             }
           }
         });
@@ -44,7 +47,7 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [onClose, onPhotoReceived]);
+  }, [onPhotoReceived]); // Removed onClose from dependencies as it's no longer called here
 
   const url = `${window.location.origin}/?session=${sessionId}`;
 

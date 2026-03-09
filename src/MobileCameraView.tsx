@@ -126,7 +126,18 @@ export const MobileCameraView = ({ sessionId }: { sessionId: string }) => {
         <h1 className="text-3xl font-bold mb-2">¡Foto enviada!</h1>
         <p className="text-emerald-100 text-lg mb-8">Mira la pantalla de tu ordenador.</p>
         <button 
-          onClick={() => setStatus('ready')}
+          onClick={async () => {
+            try {
+              await updateDoc(doc(db, 'photoSessions', sessionId), {
+                status: 'ready',
+                photoData: null // Clear previous photo
+              });
+              setStatus('ready');
+            } catch (err) {
+              console.error("Error resetting session:", err);
+              setStatus('ready'); // Fallback to local state update
+            }
+          }}
           className="bg-white text-emerald-700 px-8 py-4 rounded-full font-bold text-lg shadow-lg active:scale-95 transition-transform"
         >
           Hacer otra foto
