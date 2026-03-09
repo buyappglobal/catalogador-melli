@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 // Esto evita que los escáneres de GitHub detecten la clave en el código público y la revoquen
 const obfuscatedKey = process.env.OBFUSCATED_GEMINI_API_KEY || '';
 const decodedReversed = obfuscatedKey ? atob(obfuscatedKey) : '';
-const apiKey = decodedReversed.split('').reverse().join('');
+const apiKey = decodedReversed.split('').reverse().join('').trim();
 const ai = new GoogleGenAI({ apiKey: apiKey });
 
 interface FichaTecnicaItem {

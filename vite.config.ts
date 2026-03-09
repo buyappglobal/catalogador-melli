@@ -7,7 +7,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   // Ofuscamos la clave con nivel "militar" para evitar que los escáneres de GitHub/Google la revoquen
   // Le damos la vuelta a la cadena y luego la pasamos a Base64
-  const rawKey = env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || '';
+  const rawKey = (env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || '').trim();
   const reversedKey = rawKey.split('').reverse().join('');
   const obfuscatedKey = Buffer.from(reversedKey).toString('base64');
 
