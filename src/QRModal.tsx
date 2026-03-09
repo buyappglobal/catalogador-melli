@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Smartphone, Loader2, CheckCircle } from 'lucide-react';
+import { X, Smartphone, Loader2, CheckCircle, Minus } from 'lucide-react';
 import { db } from './firebase';
 import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid';
 
 export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onPhotoReceived: (base64: string) => void }) => {
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [status, setStatus] = useState<'waiting' | 'connected' | 'photo_taken'>('waiting');
+  const [status, setStatus] = useState<'waiting' | 'connected' | 'photo_taken' | 'ready'>('waiting');
   const [error, setError] = useState('');
+  const [isMinimized, setIsMinimized] = useState(false);
 
   useEffect(() => {
     let unsubscribe: () => void;
@@ -29,10 +30,6 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
             setStatus(data.status);
             if (data.status === 'photo_taken' && data.photoData) {
               onPhotoReceived(data.photoData);
-              // Instead of closing the modal, we keep it open and reset the status
-              // so the mobile device can send another photo.
-              // We don't reset the status here, the mobile device will reset it to 'ready'
-              // when the user clicks "Hacer otra foto".
             }
           }
         });
@@ -47,19 +44,70 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [onPhotoReceived]); // Removed onClose from dependencies as it's no longer called here
+  }, [onPhotoReceived]);
+
+  // Auto-minimize when connected
+  useEffect(() => {
+    if (status === 'connected') {
+      const timer = setTimeout(() => {
+        setIsMinimized(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
 
   const url = `${window.location.origin}/?session=${sessionId}`;
+
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+        <div className="bg-white shadow-xl shadow-slate-200/50 rounded-2xl p-3 pr-4 flex items-center gap-4 border border-slate-200">
+          <div 
+            className="relative bg-emerald-100 p-2.5 rounded-full cursor-pointer hover:bg-emerald-200 transition-colors" 
+            onClick={() => setIsMinimized(false)} 
+            title="Maximizar"
+          >
+            <Smartphone className="w-5 h-5 text-emerald-600" />
+            <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full animate-pulse"></span>
+          </div>
+          <div className="flex flex-col cursor-pointer" onClick={() => setIsMinimized(false)}>
+            <span className="text-sm font-bold text-slate-800">Móvil Vinculado</span>
+            <span className="text-xs font-medium text-emerald-600">
+              {status === 'photo_taken' ? 'Recibiendo foto...' : 'Cámara lista'}
+            </span>
+          </div>
+          <div className="w-px h-8 bg-slate-100 mx-1"></div>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onClose(); }} 
+            className="p-2 hover:bg-red-50 hover:text-red-600 rounded-full text-slate-400 transition-colors"
+            title="Desconectar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden relative">
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="absolute top-4 right-4 flex gap-2">
+          <button 
+            onClick={() => setIsMinimized(true)}
+            className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-colors"
+            title="Minimizar"
+          >
+            <Minus className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={onClose}
+            className="text-slate-400 hover:text-red-600 bg-slate-100 hover:bg-red-50 p-2 rounded-full transition-colors"
+            title="Cerrar conexión"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
         <div className="p-8 text-center">
           <div className="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -86,7 +134,7 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
                 <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center rounded-2xl">
                   <CheckCircle className="w-12 h-12 text-emerald-500 mb-2" />
                   <p className="font-bold text-emerald-700">¡Móvil Conectado!</p>
-                  <p className="text-sm text-emerald-600/80">Esperando foto...</p>
+                  <p className="text-sm text-emerald-600/80">Minimizando...</p>
                 </div>
               )}
             </div>
