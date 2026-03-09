@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Image as ImageIcon, Loader2, CheckCircle, Package, FileText, Settings, ShieldCheck, Tag, Copy, RefreshCw, Lightbulb, ChevronDown, Sparkles, Camera } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, Image as ImageIcon, Loader2, CheckCircle, Package, FileText, Settings, ShieldCheck, Tag, Copy, RefreshCw, Lightbulb, ChevronDown, Sparkles, Camera, Smartphone } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { motion, AnimatePresence } from 'motion/react';
+import { MobileCameraView } from './MobileCameraView';
+import { QRModal } from './QRModal';
 
 // Soporta tanto el entorno de AI Studio como el despliegue en GitHub Pages con VITE_GEMINI_API_KEY
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
@@ -20,12 +22,38 @@ interface CatalogData {
   Texto_Venta_Persuasivo: string;
 }
 
+const copyToClipboard = async (text: string) => {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch (err) {
+      console.warn("Clipboard API failed, using fallback", err);
+    }
+  }
+  // Fallback para navegadores móviles antiguos o webviews
+  try {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    document.execCommand('copy');
+    textArea.remove();
+  } catch (error) {
+    console.error("Fallback copy failed", error);
+  }
+};
+
 const CopyButton = ({ textToCopy, className = "" }: { textToCopy: string, className?: string }) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = (e?: React.MouseEvent) => {
+  const handleCopy = async (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    navigator.clipboard.writeText(textToCopy);
+    await copyToClipboard(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -44,16 +72,17 @@ const CopyButton = ({ textToCopy, className = "" }: { textToCopy: string, classN
 const FichaTecnicaRow = ({ item }: { item: FichaTecnicaItem }) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(item.valor);
+  const handleCopy = async () => {
+    await copyToClipboard(item.valor);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div 
+    <button 
+      type="button"
       onClick={handleCopy}
-      className="flex justify-between items-center border-b border-slate-100 py-3 sm:py-2 last:border-0 cursor-pointer hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors active:bg-slate-100"
+      className="w-full flex justify-between items-center border-b border-slate-100 py-3 sm:py-2 last:border-0 cursor-pointer hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors active:bg-slate-100 text-left"
       title="Clic para copiar valor"
     >
       <span className="text-sm sm:text-xs font-medium text-slate-500 pr-2">{item.caracteristica}</span>
@@ -63,32 +92,35 @@ const FichaTecnicaRow = ({ item }: { item: FichaTecnicaItem }) => {
         </span>
         {copied ? <CheckCircle className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-300" />}
       </div>
-    </div>
+    </button>
   );
 };
 
 const CompatibilidadRow = ({ comp }: { comp: string }) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(comp);
+  const handleCopy = async () => {
+    await copyToClipboard(comp);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <li 
-      onClick={handleCopy}
-      className="text-base sm:text-sm flex items-center justify-between cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-2 sm:py-1.5 -mx-2 transition-colors active:bg-slate-100"
-      title="Clic para copiar referencia"
-    >
-      <div className="flex items-start gap-2 pr-2">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 sm:mt-1.5 shrink-0" />
-        <span className={`leading-snug transition-colors ${copied ? 'text-emerald-600 font-medium' : 'text-slate-600'}`}>
-          {copied ? '¡Copiado!' : comp}
-        </span>
-      </div>
-      {copied ? <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> : <Copy className="w-4 h-4 text-slate-300 shrink-0" />}
+    <li>
+      <button 
+        type="button"
+        onClick={handleCopy}
+        className="w-full text-left text-base sm:text-sm flex items-center justify-between cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-2 sm:py-1.5 -mx-2 transition-colors active:bg-slate-100"
+        title="Clic para copiar referencia"
+      >
+        <div className="flex items-start gap-2 pr-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 sm:mt-1.5 shrink-0" />
+          <span className={`leading-snug transition-colors ${copied ? 'text-emerald-600 font-medium' : 'text-slate-600'}`}>
+            {copied ? '¡Copiado!' : comp}
+          </span>
+        </div>
+        {copied ? <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> : <Copy className="w-4 h-4 text-slate-300 shrink-0" />}
+      </button>
     </li>
   );
 };
@@ -157,8 +189,17 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CatalogData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showQR, setShowQR] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if we are in mobile camera mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const sessionId = urlParams.get('session');
+
+  if (sessionId) {
+    return <MobileCameraView sessionId={sessionId} />;
+  }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -328,11 +369,11 @@ Limpieza de Datos:
                       Galería / Archivo
                     </button>
                     <button 
-                      onClick={() => cameraInputRef.current?.click()}
+                      onClick={() => setShowQR(true)}
                       className="flex-1 flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-emerald-600 border-2 border-emerald-600 rounded-xl text-base sm:text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm w-full"
                     >
-                      <Camera className="w-5 h-5 sm:w-4 sm:h-4" />
-                      Hacer Foto
+                      <Smartphone className="w-5 h-5 sm:w-4 sm:h-4" />
+                      Conectar Móvil
                     </button>
                   </div>
 
@@ -517,6 +558,17 @@ Limpieza de Datos:
         {/* Accordion de Posibles Mejoras */}
         <ImprovementsAccordion />
       </main>
+
+      {showQR && (
+        <QRModal 
+          onClose={() => setShowQR(false)} 
+          onPhotoReceived={(base64) => {
+            setImage(base64);
+            setResult(null);
+            setError(null);
+          }} 
+        />
+      )}
     </div>
   );
 }

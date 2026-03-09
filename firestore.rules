@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: photoSessions
+    // Document ID: {sessionId} (UUID)
+    // Fields:
+    //   - status: string (required, 'waiting', 'connected', 'photo_taken')
+    //   - photoData: string (optional, base64 image data, max 1MB)
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidPhotoSessionCreate(data) {
+      return hasOnlyAllowedFields(['status', 'createdAt']) &&
+             data.status == 'waiting' &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidPhotoSessionUpdate(data) {
+      return hasOnlyAllowedFields(['status', 'createdAt', 'photoData']) &&
+             data.createdAt == resource.data.createdAt && // Immutable
+             (data.status == 'connected' || data.status == 'photo_taken') &&
+             (!('photoData' in data) || (data.photoData is string && data.photoData.size() < 1000000));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /photoSessions/{sessionId} {
+      // Allow get (read a specific document by UUID) but NOT list
+      allow get: if true;
+      allow list: if false;
+      
+      // Allow create if valid
+      allow create: if isValidPhotoSessionCreate(request.resource.data);
+      
+      // Allow update if valid
+      allow update: if isValidPhotoSessionUpdate(request.resource.data);
+      
+      // Allow delete
+      allow delete: if true;
+    }
+  }
+}

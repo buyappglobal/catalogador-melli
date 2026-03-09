@@ -1,0 +1,32 @@
+{
+  "entities": {
+    "PhotoSession": {
+      "title": "PhotoSession",
+      "description": "A temporary session to transfer a photo from a mobile device to a PC via QR code.",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["waiting", "connected", "photo_taken"],
+          "description": "The current status of the session."
+        },
+        "photoData": {
+          "type": "string",
+          "description": "The base64 encoded image data."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the session was created."
+        }
+      },
+      "required": ["status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "photoSessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/PhotoSession" },
+      "description": "Stores temporary photo transfer sessions."
+    }
+  }
+}
