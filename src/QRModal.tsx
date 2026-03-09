@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { X, Smartphone, Loader2, CheckCircle, Minus } from 'lucide-react';
 import { db } from './firebase';

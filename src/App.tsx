@@ -22,6 +22,14 @@ interface CatalogData {
   Texto_Venta_Persuasivo: string;
 }
 
+interface ProcessedItem {
+  id: string;
+  image: string;
+  loading: boolean;
+  result: CatalogData | null;
+  error: string | null;
+}
+
 const copyToClipboard = async (text: string) => {
   if (navigator.clipboard && window.isSecureContext) {
     try {
@@ -184,11 +192,10 @@ const ImprovementsAccordion = () => {
   );
 };
 
+import { v4 as uuidv4 } from 'uuid';
+
 export default function App() {
-  const [image, setImage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CatalogData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<ProcessedItem[]>([]);
   const [showQR, setShowQR] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -224,40 +231,8 @@ export default function App() {
     return <MobileCameraView sessionId={sessionId} />;
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-        setResult(null);
-        setError(null);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-        setResult(null);
-        setError(null);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
-
-  const processImageWithData = async (imageData: string) => {
-    setLoading(true);
-    setError(null);
+  const processImageWithData = async (imageData: string, id: string) => {
+    setItems(prev => prev.map(item => item.id === id ? { ...item, loading: true, error: null } : item));
 
     try {
       const base64Data = imageData.split(',')[1];
@@ -330,22 +305,54 @@ Limpieza de Datos:
 
       if (response.text) {
         const parsedData = JSON.parse(response.text) as CatalogData;
-        setResult(parsedData);
+        setItems(prev => prev.map(item => item.id === id ? { ...item, loading: false, result: parsedData } : item));
       } else {
         throw new Error("No se recibió respuesta del modelo.");
       }
     } catch (err) {
       console.error(err);
-      setError("Hubo un error al procesar la imagen. Por favor, inténtalo de nuevo.");
-    } finally {
-      setLoading(false);
+      setItems(prev => prev.map(item => item.id === id ? { ...item, loading: false, error: "Hubo un error al procesar la imagen. Por favor, inténtalo de nuevo." } : item));
     }
   };
 
-  const processImage = () => {
-    if (image) {
-      processImageWithData(image);
+  const handleNewImage = (base64: string) => {
+    const newId = uuidv4();
+    const newItem: ProcessedItem = {
+      id: newId,
+      image: base64,
+      loading: true,
+      result: null,
+      error: null
+    };
+    setItems(prev => [newItem, ...prev]);
+    processImageWithData(base64, newId);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleNewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleNewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
   };
 
   return (
@@ -362,15 +369,6 @@ Limpieza de Datos:
             <h1 className="font-semibold text-lg tracking-tight text-slate-800 ml-2 border-l border-slate-200 pl-4">Catalogador AI</h1>
           </div>
           <div className="flex items-center gap-3">
-            {!showQR && (
-              <button
-                onClick={() => setShowQR(true)}
-                className="text-sm font-semibold bg-slate-100 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2"
-              >
-                <Smartphone className="w-4 h-4" />
-                <span className="hidden sm:inline">Vincular Móvil</span>
-              </button>
-            )}
             {deferredPrompt && (
               <button
                 onClick={handleInstallClick}
@@ -385,222 +383,189 @@ Limpieza de Datos:
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Panel Superior: Subida de foto */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+          <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <ImageIcon className="w-4 h-4" />
+            Nueva Etiqueta
+          </h2>
           
-          {/* Panel Izquierdo: Visor de foto y botón */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <h2 className="text-sm font-medium text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <ImageIcon className="w-4 h-4" />
-                Imagen de la Etiqueta
-              </h2>
-              
-              {!image ? (
-                <div
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors group"
-                >
-                  <div className="bg-emerald-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-100 transition-colors">
-                    <Upload className="w-6 h-6 text-emerald-600" />
-                  </div>
-                  <p className="text-sm font-medium text-slate-700 mb-1">Sube o arrastra la foto de la etiqueta</p>
-                  <p className="text-xs text-slate-500 mb-6">Soporta JPG, PNG, WEBP</p>
-                  
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
-                    <button 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-white border-2 border-slate-300 rounded-xl text-base sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors w-full"
-                    >
-                      <ImageIcon className="w-5 h-5 sm:w-4 sm:h-4" />
-                      Galería / Archivo
-                    </button>
-                    <button 
-                      onClick={() => setShowQR(true)}
-                      className="flex-1 flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-emerald-600 border-2 border-emerald-600 rounded-xl text-base sm:text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm w-full"
-                    >
-                      <Smartphone className="w-5 h-5 sm:w-4 sm:h-4" />
-                      Conectar Móvil
-                    </button>
-                  </div>
-
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleImageUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-                  <input
-                    type="file"
-                    ref={cameraInputRef}
-                    onChange={handleImageUpload}
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                  />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square flex items-center justify-center">
-                    <img src={image} alt="Etiqueta subida" className="max-w-full max-h-full object-contain" />
-                    <button
-                      onClick={() => {
-                        setImage(null);
-                        setResult(null);
-                      }}
-                      className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-slate-700 p-1.5 rounded-lg shadow-sm hover:bg-white transition-colors"
-                      title="Cambiar imagen"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <button
-                    id="process-btn"
-                    onClick={processImage}
-                    disabled={loading}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-lg sm:text-base py-4 sm:py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-6 h-6 sm:w-5 sm:h-5 animate-spin" />
-                        Procesando con IA...
-                      </>
-                    ) : (
-                      <>
-                        <Settings className="w-6 h-6 sm:w-5 sm:h-5" />
-                        Extraer Información
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors group"
+          >
+            <div className="bg-emerald-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-100 transition-colors">
+              <Upload className="w-6 h-6 text-emerald-600" />
             </div>
+            <p className="text-sm font-medium text-slate-700 mb-1">Sube o arrastra la foto de la etiqueta</p>
+            <p className="text-xs text-slate-500 mb-6">Soporta JPG, PNG, WEBP</p>
             
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm"
+            <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-white border-2 border-slate-300 rounded-xl text-base sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors w-full"
               >
-                {error}
+                <ImageIcon className="w-5 h-5 sm:w-4 sm:h-4" />
+                Galería / Archivo
+              </button>
+              <button 
+                onClick={() => setShowQR(true)}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 sm:py-3 bg-emerald-600 border-2 border-emerald-600 rounded-xl text-base sm:text-sm font-semibold text-white hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm w-full"
+              >
+                <Smartphone className="w-5 h-5 sm:w-4 sm:h-4" />
+                Conectar Móvil
+              </button>
+            </div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <input
+              type="file"
+              ref={cameraInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+            />
+          </div>
+        </div>
+
+        {/* Lista de Resultados */}
+        <div className="space-y-12">
+          <AnimatePresence>
+            {items.map((item, index) => (
+              <motion.div 
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`grid grid-cols-1 lg:grid-cols-12 gap-8 ${index === 0 ? 'ring-4 ring-emerald-100 rounded-3xl p-4 -mx-4 bg-white/50' : ''}`}
+              >
+                {/* Panel Izquierdo: Visor de foto */}
+                <div className="lg:col-span-5 space-y-6">
+                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 aspect-square flex items-center justify-center">
+                      <img src={item.image} alt="Etiqueta subida" className="max-w-full max-h-full object-contain" />
+                    </div>
+                    {item.error && (
+                      <button
+                        onClick={() => processImageWithData(item.image, item.id)}
+                        className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-md"
+                      >
+                        <RefreshCw className="w-5 h-5" />
+                        Reintentar Procesamiento
+                      </button>
+                    )}
+                  </div>
+                  
+                  {item.error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm">
+                      {item.error}
+                    </div>
+                  )}
+                </div>
+
+                {/* Panel Derecho: Resultados */}
+                <div className="lg:col-span-7">
+                  {item.loading && (
+                    <div className="h-full min-h-[400px] flex flex-col items-center justify-center text-emerald-600 border border-slate-200 rounded-2xl bg-white shadow-sm">
+                      <Loader2 className="w-10 h-10 animate-spin mb-4" />
+                      <p className="text-sm font-medium animate-pulse">Analizando etiqueta y generando catálogo...</p>
+                    </div>
+                  )}
+
+                  {item.result && !item.loading && (
+                    <div className="space-y-6">
+                      {/* Título y OE */}
+                      <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div className="flex justify-between items-start mb-2 gap-4">
+                          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">
+                            {item.result.Titulo_Comercial}
+                          </h2>
+                          <CopyButton textToCopy={item.result.Titulo_Comercial} className="shrink-0" />
+                        </div>
+                        <div className="flex items-center justify-between sm:justify-start gap-2 mt-4">
+                          <span className="inline-flex items-center gap-1.5 px-4 py-2 sm:px-3 sm:py-1 rounded-full bg-slate-100 text-slate-700 text-base sm:text-sm font-medium border border-slate-200">
+                            <Tag className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
+                            OE: <span className="font-mono">{item.result.Referencia_OE}</span>
+                          </span>
+                          <CopyButton textToCopy={item.result.Referencia_OE} />
+                        </div>
+                      </div>
+
+                      {/* Bloque Superior: Texto de Venta */}
+                      <div className="bg-emerald-50 p-5 sm:p-6 rounded-2xl border border-emerald-100 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+                          <ShieldCheck className="w-24 h-24 text-emerald-600" />
+                        </div>
+                        <div className="relative z-10">
+                          <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-2">
+                              <ShieldCheck className="w-4 h-4" />
+                              Texto de Venta
+                            </h3>
+                            <CopyButton 
+                              textToCopy={item.result.Texto_Venta_Persuasivo} 
+                              className="text-emerald-600/60 hover:text-emerald-700 hover:bg-emerald-100/50"
+                            />
+                          </div>
+                          <p className="text-base sm:text-sm text-emerald-900/80 leading-relaxed">
+                            {item.result.Texto_Venta_Persuasivo}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Bloque Inferior Izq: Compatibilidades */}
+                        <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-emerald-500" />
+                              Compatibilidades
+                            </h3>
+                            <CopyButton textToCopy={item.result.Compatibilidades.join('\n')} />
+                          </div>
+                          <ul className="space-y-1">
+                            {item.result.Compatibilidades.map((comp, idx) => (
+                              <CompatibilidadRow key={idx} comp={comp} />
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Bloque Inferior Der: Ficha Técnica */}
+                        <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                              <Settings className="w-4 h-4 text-slate-400" />
+                              Ficha Técnica
+                            </h3>
+                            <CopyButton textToCopy={item.result.Ficha_Tecnica.map(f => `${f.caracteristica}: ${f.valor}`).join('\n')} />
+                          </div>
+                          <div className="space-y-1">
+                            {item.result.Ficha_Tecnica.map((fItem, idx) => (
+                              <FichaTecnicaRow key={idx} item={fItem} />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </motion.div>
-            )}
-          </div>
-
-          {/* Panel Derecho: Resultados */}
-          <div className="lg:col-span-7">
-            <AnimatePresence mode="wait">
-              {!result && !loading && (
-                <motion.div
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="h-full min-h-[400px] flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50"
-                >
-                  <FileText className="w-12 h-12 mb-4 opacity-20" />
-                  <p className="text-sm">Sube una imagen y procesa para ver los resultados aquí.</p>
-                </motion.div>
-              )}
-
-              {loading && (
-                <motion.div
-                  key="loading"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="h-full min-h-[400px] flex flex-col items-center justify-center text-emerald-600 border border-slate-200 rounded-2xl bg-white shadow-sm"
-                >
-                  <Loader2 className="w-10 h-10 animate-spin mb-4" />
-                  <p className="text-sm font-medium animate-pulse">Analizando etiqueta y generando catálogo...</p>
-                </motion.div>
-              )}
-
-              {result && !loading && (
-                <motion.div
-                  key="result"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-6"
-                >
-                  {/* Título y OE */}
-                  <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div className="flex justify-between items-start mb-2 gap-4">
-                      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">
-                        {result.Titulo_Comercial}
-                      </h2>
-                      <CopyButton textToCopy={result.Titulo_Comercial} className="shrink-0" />
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-start gap-2 mt-4">
-                      <span className="inline-flex items-center gap-1.5 px-4 py-2 sm:px-3 sm:py-1 rounded-full bg-slate-100 text-slate-700 text-base sm:text-sm font-medium border border-slate-200">
-                        <Tag className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
-                        OE: <span className="font-mono">{result.Referencia_OE}</span>
-                      </span>
-                      <CopyButton textToCopy={result.Referencia_OE} />
-                    </div>
-                  </div>
-
-                  {/* Bloque Superior: Texto de Venta */}
-                  <div className="bg-emerald-50 p-5 sm:p-6 rounded-2xl border border-emerald-100 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-                      <ShieldCheck className="w-24 h-24 text-emerald-600" />
-                    </div>
-                    <div className="relative z-10">
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-2">
-                          <ShieldCheck className="w-4 h-4" />
-                          Texto de Venta
-                        </h3>
-                        <CopyButton 
-                          textToCopy={result.Texto_Venta_Persuasivo} 
-                          className="text-emerald-600/60 hover:text-emerald-700 hover:bg-emerald-100/50"
-                        />
-                      </div>
-                      <p className="text-base sm:text-sm text-emerald-900/80 leading-relaxed">
-                        {result.Texto_Venta_Persuasivo}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Bloque Inferior Izq: Compatibilidades */}
-                    <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-emerald-500" />
-                          Compatibilidades
-                        </h3>
-                        <CopyButton textToCopy={result.Compatibilidades.join('\n')} />
-                      </div>
-                      <ul className="space-y-1">
-                        {result.Compatibilidades.map((comp, idx) => (
-                          <CompatibilidadRow key={idx} comp={comp} />
-                        ))}
-                      </ul>
-                    </div>
-
-                    {/* Bloque Inferior Der: Ficha Técnica */}
-                    <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                          <Settings className="w-4 h-4 text-slate-400" />
-                          Ficha Técnica
-                        </h3>
-                        <CopyButton textToCopy={result.Ficha_Tecnica.map(f => `${f.caracteristica}: ${f.valor}`).join('\n')} />
-                      </div>
-                      <div className="space-y-1">
-                        {result.Ficha_Tecnica.map((item, idx) => (
-                          <FichaTecnicaRow key={idx} item={item} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+            ))}
+          </AnimatePresence>
+          
+          {items.length === 0 && (
+            <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+              <FileText className="w-12 h-12 mb-4 opacity-20" />
+              <p className="text-sm">Sube una imagen y procesa para ver los resultados aquí.</p>
+            </div>
+          )}
         </div>
 
         {/* Accordion de Posibles Mejoras */}
@@ -611,11 +576,7 @@ Limpieza de Datos:
         <QRModal 
           onClose={() => setShowQR(false)} 
           onPhotoReceived={(base64) => {
-            setImage(base64);
-            setResult(null);
-            setError(null);
-            // Auto-trigger processing immediately with the new image data
-            processImageWithData(base64);
+            handleNewImage(base64);
           }} 
         />
       )}
