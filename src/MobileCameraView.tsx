@@ -6,7 +6,30 @@ import { doc, updateDoc } from 'firebase/firestore';
 export const MobileCameraView = ({ sessionId }: { sessionId: string }) => {
   const [status, setStatus] = useState<'connecting' | 'ready' | 'uploading' | 'success' | 'error'>('connecting');
   const [errorMsg, setErrorMsg] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -113,7 +136,15 @@ export const MobileCameraView = ({ sessionId }: { sessionId: string }) => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-6 text-center">
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white p-6 text-center relative">
+      {deferredPrompt && (
+        <button 
+          onClick={handleInstallClick}
+          className="absolute top-4 right-4 bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-full text-sm font-bold border border-emerald-500/30"
+        >
+          Instalar App
+        </button>
+      )}
       <div className="bg-slate-800 p-8 rounded-3xl w-full max-w-sm shadow-2xl border border-slate-700">
         <div className="bg-emerald-500/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
           <Camera className="w-10 h-10 text-emerald-400" />
