@@ -69,7 +69,7 @@ const CopyButton = ({ textToCopy, className = "" }: { textToCopy: string, classN
   );
 };
 
-const FichaTecnicaRow = ({ item }: { item: FichaTecnicaItem }) => {
+const FichaTecnicaRow = ({ item, key }: { item: FichaTecnicaItem, key?: any }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -96,7 +96,7 @@ const FichaTecnicaRow = ({ item }: { item: FichaTecnicaItem }) => {
   );
 };
 
-const CompatibilidadRow = ({ comp }: { comp: string }) => {
+const CompatibilidadRow = ({ comp, key }: { comp: string, key?: any }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
