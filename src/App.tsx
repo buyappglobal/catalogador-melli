@@ -53,7 +53,7 @@ const FichaTecnicaRow = ({ item }: { item: FichaTecnicaItem }) => {
   return (
     <div 
       onClick={handleCopy}
-      className="flex justify-between items-center border-b border-slate-100 py-3 sm:py-2 last:border-0 group cursor-pointer hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors active:bg-slate-100"
+      className="flex justify-between items-center border-b border-slate-100 py-3 sm:py-2 last:border-0 cursor-pointer hover:bg-slate-50 rounded-lg px-2 -mx-2 transition-colors active:bg-slate-100"
       title="Clic para copiar valor"
     >
       <span className="text-sm sm:text-xs font-medium text-slate-500 pr-2">{item.caracteristica}</span>
@@ -61,7 +61,7 @@ const FichaTecnicaRow = ({ item }: { item: FichaTecnicaItem }) => {
         <span className={`text-base sm:text-sm font-medium text-right transition-colors ${copied ? 'text-emerald-600' : 'text-slate-800'}`}>
           {copied ? '¡Copiado!' : item.valor}
         </span>
-        <CopyButton textToCopy={item.valor} className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity" />
+        {copied ? <CheckCircle className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-300" />}
       </div>
     </div>
   );
@@ -79,7 +79,7 @@ const CompatibilidadRow = ({ comp }: { comp: string }) => {
   return (
     <li 
       onClick={handleCopy}
-      className="text-base sm:text-sm flex items-center justify-between group cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-2 sm:py-1.5 -mx-2 transition-colors active:bg-slate-100"
+      className="text-base sm:text-sm flex items-center justify-between cursor-pointer hover:bg-slate-50 rounded-lg px-2 py-2 sm:py-1.5 -mx-2 transition-colors active:bg-slate-100"
       title="Clic para copiar referencia"
     >
       <div className="flex items-start gap-2 pr-2">
@@ -88,7 +88,7 @@ const CompatibilidadRow = ({ comp }: { comp: string }) => {
           {copied ? '¡Copiado!' : comp}
         </span>
       </div>
-      <CopyButton textToCopy={comp} className="opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+      {copied ? <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" /> : <Copy className="w-4 h-4 text-slate-300 shrink-0" />}
     </li>
   );
 };
