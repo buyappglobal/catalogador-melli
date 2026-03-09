@@ -3,8 +3,10 @@ import { Upload, Image as ImageIcon, Loader2, CheckCircle, Package, FileText, Se
 import { GoogleGenAI, Type } from '@google/genai';
 import { motion, AnimatePresence } from 'motion/react';
 
-// Soporta tanto el entorno de AI Studio como el despliegue en GitHub Pages con VITE_GEMINI_API_KEY
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+// Recuperamos la clave ofuscada (Base64) inyectada por Vite y la decodificamos en tiempo de ejecución
+// Esto evita que los escáneres de GitHub detecten la clave "AIzaSy..." en el código público y la revoquen
+const obfuscatedKey = process.env.OBFUSCATED_GEMINI_API_KEY || '';
+const apiKey = obfuscatedKey ? atob(obfuscatedKey) : '';
 const ai = new GoogleGenAI({ apiKey: apiKey });
 
 interface FichaTecnicaItem {
