@@ -13,7 +13,7 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
+        includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
         manifest: {
           name: 'Melli Catalogador',
           short_name: 'Catalogador',
