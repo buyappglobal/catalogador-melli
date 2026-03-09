@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Image as ImageIcon, Loader2, CheckCircle, Package, FileText, Settings, ShieldCheck, Tag, Copy, RefreshCw, Lightbulb, ChevronDown, Sparkles } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, CheckCircle, Package, FileText, Settings, ShieldCheck, Tag, Copy, RefreshCw, Lightbulb, ChevronDown, Sparkles, Camera } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -105,6 +105,7 @@ export default function App() {
   const [result, setResult] = useState<CatalogData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -257,19 +258,44 @@ Limpieza de Datos:
                 <div
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 hover:border-emerald-500 transition-colors cursor-pointer group"
+                  className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition-colors group"
                 >
                   <div className="bg-emerald-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-100 transition-colors">
                     <Upload className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <p className="text-sm font-medium text-slate-700 mb-1">Haz clic o arrastra una imagen</p>
-                  <p className="text-xs text-slate-500">Soporta JPG, PNG, WEBP</p>
+                  <p className="text-sm font-medium text-slate-700 mb-1">Sube o arrastra una imagen</p>
+                  <p className="text-xs text-slate-500 mb-6">Soporta JPG, PNG, WEBP</p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                      Galería / Archivo
+                    </button>
+                    <button 
+                      onClick={() => cameraInputRef.current?.click()}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-medium text-white hover:bg-emerald-700 transition-colors shadow-sm"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Hacer Foto
+                    </button>
+                  </div>
+
                   <input
                     type="file"
                     ref={fileInputRef}
                     onChange={handleImageUpload}
                     accept="image/*"
+                    className="hidden"
+                  />
+                  <input
+                    type="file"
+                    ref={cameraInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/*"
+                    capture="environment"
                     className="hidden"
                   />
                 </div>
