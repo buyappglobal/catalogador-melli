@@ -361,15 +361,26 @@ Limpieza de Datos:
             />
             <h1 className="font-semibold text-lg tracking-tight text-slate-800 ml-2 border-l border-slate-200 pl-4">Catalogador AI</h1>
           </div>
-          {deferredPrompt && (
-            <button
-              onClick={handleInstallClick}
-              className="text-sm font-semibold bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-200 transition-colors flex items-center gap-2"
-            >
-              <Smartphone className="w-4 h-4" />
-              Instalar App
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {!showQR && (
+              <button
+                onClick={() => setShowQR(true)}
+                className="text-sm font-semibold bg-slate-100 text-slate-700 px-4 py-2 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-2"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span className="hidden sm:inline">Vincular Móvil</span>
+              </button>
+            )}
+            {deferredPrompt && (
+              <button
+                onClick={handleInstallClick}
+                className="text-sm font-semibold bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg hover:bg-emerald-200 transition-colors flex items-center gap-2"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span className="hidden sm:inline">Instalar App</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
