@@ -11,6 +11,12 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
   const [error, setError] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
 
+  // Use a ref to always access the latest onPhotoReceived without triggering re-renders
+  const onPhotoReceivedRef = useRef(onPhotoReceived);
+  useEffect(() => {
+    onPhotoReceivedRef.current = onPhotoReceived;
+  }, [onPhotoReceived]);
+
   useEffect(() => {
     let unsubscribe: () => void;
     
@@ -29,7 +35,7 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
             const data = docSnap.data();
             setStatus(data.status);
             if (data.status === 'photo_taken' && data.photoData) {
-              onPhotoReceived(data.photoData);
+              onPhotoReceivedRef.current(data.photoData);
             }
           }
         });
@@ -44,7 +50,7 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [onPhotoReceived]);
+  }, []); // Empty dependency array so it only runs once per modal open
 
   // Auto-minimize when connected
   useEffect(() => {
@@ -89,26 +95,23 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
     );
   }
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden relative">
-        <div className="absolute top-4 right-4 flex gap-2">
-          <button 
-            onClick={() => setIsMinimized(true)}
-            className="text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-colors"
-            title="Minimizar"
-          >
-            <Minus className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={onClose}
-            className="text-slate-400 hover:text-red-600 bg-slate-100 hover:bg-red-50 p-2 rounded-full transition-colors"
-            title="Cerrar conexión"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+  const handleBackdropClick = () => {
+    if (status !== 'waiting') {
+      setIsMinimized(true);
+    } else {
+      onClose();
+    }
+  };
 
+  return (
+    <div 
+      className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden relative"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-8 text-center">
           <div className="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
             <Smartphone className="w-8 h-8 text-emerald-600" />
@@ -147,6 +150,35 @@ export const QRModal = ({ onClose, onPhotoReceived }: { onClose: () => void, onP
           <div className="mt-3 bg-slate-50 rounded-xl p-4 text-sm text-slate-600 flex items-start gap-3 text-left">
             <div className="bg-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-slate-400 shrink-0 shadow-sm border border-slate-200 mt-0.5">2</div>
             <p>Toca el enlace que aparecerá en tu pantalla. No necesitas instalar nada.</p>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col gap-3">
+            {status !== 'waiting' ? (
+              <>
+                <button 
+                  onClick={() => setIsMinimized(true)}
+                  className="w-full bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-semibold py-3 rounded-xl transition-colors"
+                >
+                  Minimizar ventana
+                </button>
+                <div className="text-center mt-2">
+                  <button 
+                    onClick={onClose}
+                    className="text-red-500 hover:text-red-700 text-sm font-bold underline-offset-4 hover:underline transition-all"
+                  >
+                    Desconectar móvil
+                  </button>
+                  <p className="text-xs text-slate-400 mt-1">Atención: Si desconectas, tendrás que volver a escanear el QR.</p>
+                </div>
+              </>
+            ) : (
+              <button 
+                onClick={onClose}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+            )}
           </div>
         </div>
       </div>
