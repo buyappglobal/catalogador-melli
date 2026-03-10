@@ -355,6 +355,32 @@ Limpieza de Datos:
     e.preventDefault();
   };
 
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const clipboardItems = e.clipboardData?.items;
+      if (!clipboardItems) return;
+
+      for (let i = 0; i < clipboardItems.length; i++) {
+        if (clipboardItems[i].type.indexOf('image') !== -1) {
+          const file = clipboardItems[i].getAsFile();
+          if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              handleNewImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+          }
+          break;
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-emerald-200">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
@@ -398,7 +424,7 @@ Limpieza de Datos:
             <div className="bg-emerald-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-emerald-100 transition-colors">
               <Upload className="w-6 h-6 text-emerald-600" />
             </div>
-            <p className="text-sm font-medium text-slate-700 mb-1">Sube o arrastra la foto de la etiqueta</p>
+            <p className="text-sm font-medium text-slate-700 mb-1">Sube, arrastra o pega (Ctrl+V) la foto de la etiqueta</p>
             <p className="text-xs text-slate-500 mb-6">Soporta JPG, PNG, WEBP</p>
             
             <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
