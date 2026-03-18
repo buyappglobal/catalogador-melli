@@ -54,5 +54,10 @@ service cloud.firestore {
       // Allow delete
       allow delete: if true;
     }
+
+    match /stats/global {
+      allow read: if true;
+      allow update: if request.resource.data.totalScans == resource.data.totalScans + 1;
+    }
   }
 }

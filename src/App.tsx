@@ -4,6 +4,8 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { motion, AnimatePresence } from 'motion/react';
 import { MobileCameraView } from './MobileCameraView';
 import { QRModal } from './QRModal';
+import { db } from './firebase';
+import { doc, onSnapshot, increment, updateDoc } from 'firebase/firestore';
 
 // Soporta tanto el entorno de AI Studio como el despliegue en GitHub Pages con VITE_GEMINI_API_KEY
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
@@ -196,10 +198,21 @@ import { v4 as uuidv4 } from 'uuid';
 
 export default function App() {
   const [items, setItems] = useState<ProcessedItem[]>([]);
+  const [totalScans, setTotalScans] = useState<number>(0);
   const [showQR, setShowQR] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const statsRef = doc(db, 'stats', 'global');
+    const unsubscribe = onSnapshot(statsRef, (doc) => {
+      if (doc.exists()) {
+        setTotalScans(doc.data().totalScans || 0);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -307,6 +320,10 @@ Limpieza de Datos y Literalidad:
       if (response.text) {
         const parsedData = JSON.parse(response.text) as CatalogData;
         setItems(prev => prev.map(item => item.id === id ? { ...item, loading: false, result: parsedData } : item));
+        
+        // Increment global counter
+        const statsRef = doc(db, 'stats', 'global');
+        updateDoc(statsRef, { totalScans: increment(1) });
       } else {
         throw new Error("No se recibió respuesta del modelo.");
       }
@@ -405,6 +422,10 @@ Limpieza de Datos y Literalidad:
                 <span className="hidden sm:inline">Instalar App</span>
               </button>
             )}
+            <div className="text-sm font-semibold bg-slate-100 text-slate-700 px-4 py-2 rounded-lg flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              <span>{totalScans} escaneos</span>
+            </div>
           </div>
         </div>
       </header>
