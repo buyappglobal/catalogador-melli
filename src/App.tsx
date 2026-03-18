@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Image as ImageIcon, Loader2, CheckCircle, Package, FileText, Settings, ShieldCheck, Tag, Copy, RefreshCw, Lightbulb, ChevronDown, Sparkles, Camera, Smartphone } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, CheckCircle, Package, FileText, Settings, ShieldCheck, Tag, Copy, RefreshCw, Lightbulb, ChevronDown, Sparkles, Camera, Smartphone, LogIn, LogOut } from 'lucide-react';
 import { GoogleGenAI, Type } from '@google/genai';
 import { motion, AnimatePresence } from 'motion/react';
 import { MobileCameraView } from './MobileCameraView';
 import { QRModal } from './QRModal';
-import { db } from './firebase';
+import { db, auth } from './firebase';
 import { doc, onSnapshot, increment, updateDoc } from 'firebase/firestore';
+import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, User, signOut } from 'firebase/auth';
 
 // Soporta tanto el entorno de AI Studio como el despliegue en GitHub Pages con VITE_GEMINI_API_KEY
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
@@ -201,8 +202,38 @@ export default function App() {
   const [totalScans, setTotalScans] = useState<number>(0);
   const [showQR, setShowQR] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [newScanCount, setNewScanCount] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  const handleLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Error logging in:", error);
+    }
+  };
+
+  const handleSetScanCount = async () => {
+    const count = parseInt(newScanCount);
+    if (isNaN(count)) return;
+    try {
+      const statsRef = doc(db, 'stats', 'global');
+      await updateDoc(statsRef, { totalScans: count });
+      setNewScanCount('');
+    } catch (error) {
+      console.error("Error updating scan count:", error);
+    }
+  };
 
   useEffect(() => {
     const statsRef = doc(db, 'stats', 'global');
@@ -413,6 +444,23 @@ Limpieza de Datos y Literalidad:
             <h1 className="font-semibold text-lg tracking-tight text-slate-800 ml-2 border-l border-slate-200 pl-4">Catalogador AI</h1>
           </div>
           <div className="flex items-center gap-3">
+            {user && user.email === 'buyappglobal@gmail.com' && (
+              <div className="flex items-center gap-2 bg-amber-50 text-amber-800 px-3 py-1.5 rounded-lg border border-amber-200">
+                <input
+                  type="number"
+                  value={newScanCount}
+                  onChange={(e) => setNewScanCount(e.target.value)}
+                  placeholder="Nuevo total"
+                  className="w-20 bg-transparent border-b border-amber-300 focus:outline-none text-sm font-mono"
+                />
+                <button onClick={handleSetScanCount} className="text-xs font-bold uppercase hover:text-amber-600">Set</button>
+              </div>
+            )}
+            {user ? (
+              <button onClick={() => signOut(auth)} className="text-slate-500 hover:text-slate-800"><LogOut className="w-5 h-5" /></button>
+            ) : (
+              <button onClick={handleLogin} className="text-slate-500 hover:text-slate-800"><LogIn className="w-5 h-5" /></button>
+            )}
             {deferredPrompt && (
               <button
                 onClick={handleInstallClick}
